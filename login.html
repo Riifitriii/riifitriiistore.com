@@ -64,6 +64,7 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
 
   <script>
     const firebaseConfig = {
@@ -76,6 +77,7 @@
     };
 
     firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
   </script>
 
   <script>
@@ -100,28 +102,36 @@
 
         const user = userCredential.user;
 
-        const userData = JSON.parse(
-          localStorage.getItem("userData_" + user.uid)
-        );
-        if (userData) {
-          localStorage.setItem("loggedInUser", JSON.stringify(userData));
+        // Ambil userData dari localStorage dulu
+        let userData = JSON.parse(localStorage.getItem("userData_" + user.uid));
 
-          switch (userData.role) {
-            case "pelanggan":
-              window.location.href = "dashboard-pelanggan.html";
-              break;
-            case "kasir":
-              window.location.href = "dashboard-kasir.html";
-              break;
-            case "admin":
-              window.location.href = "dashboard-admin.html";
-              break;
-            default:
-              showError(passwordInput, "Role tidak dikenali.");
+        // Kalau tidak ada di localStorage, ambil dari Firestore
+        if (!userData) {
+          const doc = await db.collection("users").doc(user.uid).get();
+          if (doc.exists) {
+            userData = doc.data();
+            localStorage.setItem("userData_" + user.uid, JSON.stringify(userData));
+          } else {
+            showError(usernameInput, "Data pengguna tidak ditemukan. Silakan register ulang.");
+            return;
           }
-        } else {
-          showError(usernameInput, "Data pengguna tidak ditemukan.");
         }
+        localStorage.setItem("loggedInUser", JSON.stringify(userData));
+
+        switch (userData.role) {
+          case "pelanggan":
+            window.location.href = "dashboard-pelanggan.html";
+            break;
+          case "kasir":
+            window.location.href = "dashboard-kasir.html";
+            break;
+          case "admin":
+            window.location.href = "dashboard-admin.html";
+            break;
+          default:
+            showError(passwordInput, "Role tidak dikenali.");
+        }
+
       } catch (error) {
         showError(usernameInput, "Username atau password salah.");
         showError(passwordInput, " ");
@@ -149,6 +159,7 @@
       });
       document.querySelectorAll(".text-red-500").forEach((el) => el.remove());
     }
+
   </script>
 
   <script>
