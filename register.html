@@ -74,6 +74,7 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
 
   <script>
     // Konfigurasi Firebase kamu
@@ -88,6 +89,8 @@
 
     // Inisialisasi Firebase
     firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
   </script>
 
   <script>
@@ -154,13 +157,19 @@
           .createUserWithEmailAndPassword(fakeEmail, password);
         const user = userCredential.user;
 
-        // Simpan data tambahan di localStorage (opsional)
-        const userData = { uid: user.uid, name, username, whatsapp, role };
-        localStorage.setItem(
-          "userData_" + user.uid,
-          JSON.stringify(userData)
-        );
+        // Simpan data tambahan di Firestore
+        const userData = {
+          uid: user.uid,
+          name,
+          username,
+          whatsapp,
+          role,
+        };
 
+        // Menyimpan data pengguna di Firestore
+        await db.collection("users").doc(user.uid).set(userData);
+
+        // Notifikasi sukses
         document.getElementById("notif").innerHTML =
           'Berhasil daftar! <a href="login.html" class="text-purple-700 underline">Silakan login</a>';
         form.reset();
@@ -206,6 +215,9 @@
           whatsapp,
           role,
         };
+
+        // Simpan di Firestore
+        await db.collection("users").doc(user.uid).set(userData);
 
         // Simpan di localStorage
         localStorage.setItem(
